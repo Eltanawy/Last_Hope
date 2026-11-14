@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>LAST HOPE – 2D Mars Exploration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body {
+      margin: 0;
+      background: #080302;
+      color: var(--ink);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .header-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 6px 12px;
+      font-size: 10px;
+      color: var(--am);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .header-bar button {
+      font-family: inherit;
+      font-size: 9px;
+      background: #2a1208;
+      color: var(--ink);
+      border: 2px solid var(--or);
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .header-bar button:hover {
+      background: var(--or);
+      color: #1a0d08;
+    }
+    .stage {
+      width: 100%;
+      max-width: 1000px;
+      aspect-ratio: 16/9;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      border: 3px solid var(--or);
+      image-rendering: pixelated;
+      user-select: none;
+    }
+    #game-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+      z-index: 1;
+    }
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+    }
+    #ui-overlay .scr {
+      pointer-events: auto;
+    }
+    #s4.scr {
+      pointer-events: none !important;
+    }
+    #s4.scr .p, #s4.scr img, #s4.scr div {
+      pointer-events: auto;
+    }
+    .pulse-glow {
+      animation: pulseGlow 1.2s infinite alternate;
+    }
+    @keyframes pulseGlow {
+      from { box-shadow: 0 0 5px var(--or); }
+      to { box-shadow: 0 0 16px var(--cy); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <span><b>LAST HOPE:</b> MARS RECONNAISSANCE</span>
+    <button id="btn-audio-toggle" onclick="toggleAudio()">🔊 AUDIO: ON</button>
+    <button onclick="UI.go(0)">MAIN MENU</button>
+    <button onclick="UI.go(5)">MARS MAP</button>
+    <button onclick="UI.go(11)">DISCOVERIES</button>
+    <button onclick="UI.go(12)">CRAFT RSRA</button>
+  </div>
+
+  <div class="wrap" style="width: 100%; max-width: 1000px; margin: 0 auto; padding: 0 8px;">
+    <div class="stage">
+      <!-- KAPLAY Game Canvas -->
+      <canvas id="game-canvas"></canvas>
+
+      <!-- HTML DOM UI Overlay -->
+      <div id="ui-overlay">
+
+        <!-- 0 TITLE -->
+        <div class="scr L on" id="s0">
+          <img class="spr an" data-a="idle" src="assets/player/walk_frame_01.png" style="left:9%;top:63%;width:8%">
+          <div class="p i2 t ab" style="left:52%;top:7%;width:44%;height:21%">LAST HOPE</div>
+          <div class="p i3 ab sm" style="left:52%;top:30%;width:44%;height:15%">Are you ready to discover what is beyond the earth!?</div>
+          <div class="p i7 b ab" style="left:60%;top:50%;width:28%;height:11%" onclick="window.AudioManager?.play?.('click');UI.go(1)">START</div>
+          <div class="p i7 b s ab" style="left:2%;top:90%;width:15%;height:8%" onclick="window.AudioManager?.play?.('click');UI.go(11)">DISCOVERIES</div>
+          <!-- Clickable overlay for the > hex button painted in the background -->
+          <div class="ab ch" style="left:38%;top:72%;width:14%;height:22%;cursor:pointer;background:transparent;" onclick="window.AudioManager?.play?.('click');UI.go(1)"></div>
+        </div>
+
+        <!-- 1 NAME + AGE -->
+        <div class="scr L dim" id="s1">
+          <img class="spr an" data-a="idle" src="assets/player/walk_frame_01.png" style="left:6%;top:36%;width:13%">
+          <div class="p i4 ab col" style="left:22%;top:18%;width:56%;height:46%;gap:1.1cqw">
+            <span class="t" style="font-size:1.4cqw">AGENT REGISTRATION</span>
+            <span class="sm">ENTER YOUR NAME</span>
+            <input class="in" id="nm" value="Agent">
+            <span class="sm">ENTER YOUR AGE</span>
+            <input class="in" id="ag" value="12">
+          </div>
+          <div class="p i10 ch ab" style="left:44%;top:66%;width:12%;height:20%" onclick="confirmAgent()"></div>
+        </div>
+
+        <!-- 2 STORY -->
+        <div class="scr L dim" id="s2">
+          <div class="p i3 ab lf col" id="st" style="left:8%;top:8%;width:84%;height:68%;font-size:1.15cqw;line-height:1.55;overflow:hidden"></div>
+          <div class="p i10 ch ab" style="left:44%;top:76%;width:12%;height:20%" onclick="UI.storyNext()"></div>
+        </div>
+
+        <!-- 3 LOADING -->
+        <div class="scr L dim" id="s3">
+          <img class="spr an" data-a="walk" src="assets/player/walk_frame_02.png" style="left:45%;top:67%;width:9%">
+          <div class="p i4 ab col" style="left:20%;top:30%;width:60%;height:34%">
+            <span class="t">Good Luck Discovering MARS!</span>
+            <span class="c">Deploying into Atmosphere...</span>
+            <div class="bar" style="width:70%"><i id="ld" style="width:30%"></i></div>
+          </div>
+          <div class="p i7 b s ab" style="left:2%;top:90%;width:15%;height:8%" onclick="UI.go(11)">DISCOVERIES</div>
+        </div>
+
+        <!-- 4 GAME HUD OVERLAY -->
+        <div class="scr" id="s4" style="background:transparent;">
+          <!-- Time Outside Ship Bar -->
+          <div class="p i1 ab col lf" style="left:1%;top:2%;width:28%;height:14%">
+            <span class="c">TIME OUTSIDE SHIP</span>
+            <div class="bar"><i style="width:100%;background:#2fd8e8"></i></div>
+          </div>
+
+          <!-- Region Location Banner -->
+          <div id="hud-region-name" class="p i2 ab" style="left:31%;top:2%;width:38%;height:11%;font-size:.95cqw;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden">
+            ARES BASE CAMP
+          </div>
+
+          <!-- POK Currency -->
+          <div class="p i2 ab col" id="pkp" style="left:76%;top:2%;width:23%;height:14%;display:none">
+            <span class="c">POK</span>
+            <span class="t" style="font-size:1.6cqw" id="pk">00</span>
+          </div>
+
+          <!-- Left HUD Navigation Buttons -->
+          <div class="p i8 b s ab" style="left:1%;top:57%;width:15%;height:8%" onclick="window.AudioManager?.play?.('click');UI.go(0)">MENU</div>
+          <div class="p i9 b s ab" style="left:1%;top:67%;width:18%;height:9%" onclick="window.AudioManager?.play?.('click');UI.go(5)">MAP</div>
+          <div class="p i7 b s ab" id="crb" style="left:1%;top:78%;width:21%;height:9%;display:none" onclick="window.AudioManager?.play?.('click');UI.go(12)">CRAFT</div>
+          <div class="p i7 b s ab" style="left:42%;top:91%;width:16%;height:7%;font-size:.98cqw" onclick="window.AudioManager?.play?.('click');UI.go(11)">DISCOVERIES</div>
+
+          <!-- Right HUD Companion Info -->
+          <div class="p i9 b s ab" id="askb" style="left:78%;top:70%;width:20%;height:9%;display:none" onclick="window.Game?.triggerTarsyScan?.()">ASK TARSY</div>
+          <div class="p i6 ab sm" id="gm" style="left:72%;top:81%;width:27%;height:17%;font-size:.92cqw;line-height:1.5">Open the MAP: the first artifact is marked at Site X.</div>
+
+          <!-- Context Interaction Prompt -->
+          <div id="interaction-prompt" class="p i7 b ab pulse-glow" style="display:none;left:26%;top:78%;width:48%;height:11%;font-size:1.08cqw;cursor:pointer">
+            PRESS [E] OR TAP TO INTERACT
+          </div>
+        </div>
+
+        <!-- 5 MAP (MULTI-REGION SELECTOR) -->
+        <div class="scr T dim" id="s5">
+          <div class="p i2 t ab" style="left:26%;top:2%;width:48%;height:12%;font-size:1.6cqw">MARS REGIONAL MAP</div>
+          <div class="p i4 ab" id="mp" style="left:6%;top:16%;width:88%;height:68%"></div>
+          <div class="p i5 ab col lf" id="pop" style="display:none;left:45%;top:20%;width:48%;height:42%;font-size:.98cqw;z-index:20;line-height:1.6"></div>
+          <!-- Clear Back and Main Menu buttons -->
+          <div class="p i7 b s ab" style="left:2%;top:90%;width:24%;height:8%" onclick="window.AudioManager?.play?.('click');UI.go(4)">BACK TO GAME</div>
+          <div class="p i8 b s ab" style="left:76%;top:90%;width:22%;height:8%" onclick="window.AudioManager?.play?.('click');UI.go(0)">MAIN MENU</div>
+        </div>
+
+        <!-- 6 FIX TARSY -->
+        <div class="scr T dim" id="s6">
+          <div class="p i4 ab col" style="left:28%;top:4%;width:68%;height:26%;font-size:1.08cqw;line-height:1.5">
+            <b class="am">NAME: TARSY</b>"Old civilization robot that might be handy in some way."
+            <span class="c">Fix it: DRAG from the red wire to the blue wire (or tap red, then blue).</span>
+          </div>
+          <img id="t6" class="spr" src="assets/tarsy/07_tarsy_mars_dust_weathered.png" style="left:3%;top:4%;width:22%;filter:grayscale(.5) brightness(.85)">
+          <div class="p i3 ab" style="left:8%;top:33%;width:84%;height:47%"></div>
+          <div id="wr" class="wire" style="left:18%;top:52%;background:#e0301a;z-index:4"></div>
+          <div id="wb" class="wire" style="left:78%;top:44%;background:#2f7be8;z-index:4"></div>
+          <svg class="ab" id="wsv" viewBox="0 0 100 56.25" style="inset:0;width:100%;height:100%;pointer-events:none;z-index:3">
+            <line id="wl" x1="0" y1="0" x2="0" y2="0" stroke="#e0301a" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <div class="p i6 ab msg" id="m6" style="left:20%;top:82%;width:58%;height:15%;font-size:.98cqw;line-height:1.5">Drag from the red wire to the blue wire.</div>
+          <div class="p i7 b s ab nxt" id="n6" style="display:none;left:80%;top:90%;width:18%;height:8%" onclick="goK(0)">NEXT</div>
+          <div class="p i8 b s ab" style="left:2%;top:90%;width:16%;height:8%" onclick="UI.go(4)">BACK</div>
+        </div>
+
+        <!-- 7 HP3 MOLE -->
+        <div class="scr T dim" id="s7">
+          <div class="p i4 ab col" style="left:8%;top:4%;width:84%;height:37%;font-size:1.05cqw;line-height:1.6">
+            <b class="am">HP3 MOLE · +5 POK · PARTIAL DISCOVERY</b>
+            Why did it fail: insufficient soil friction. The probe hit cohesive duricrust instead of loose soil and bounced in place.
+            <span class="c">We need to increase the friction between the soil and the digger! Pushing Force Value = 1. With what would you replace this number?</span>
+          </div>
+          <div class="p i7 b ab" style="left:14%;top:46%;width:20%;height:11%" onclick="mole(0.5)">0.5</div>
+          <div class="p i7 b ab" style="left:40%;top:46%;width:20%;height:11%" onclick="mole(1)">1</div>
+          <div class="p i7 b ab" style="left:66%;top:46%;width:20%;height:11%" onclick="mole(5)">5</div>
+          <div class="p i9 b ab" style="left:78%;top:66%;width:20%;height:10%;font-size:1.1cqw" onclick="window.AudioManager?.play?.('click');document.getElementById('m7').textContent='TARSY: You need to choose a bigger value than 1 to increase the force.'">HINT</div>
+          <div class="p i6 ab msg" id="m7" style="left:8%;top:66%;width:66%;height:20%;font-size:.98cqw;line-height:1.5">Pick a value. Need help? Press HINT.</div>
+          <div class="p i7 b s ab nxt" id="n7" style="display:none;left:80%;top:90%;width:18%;height:8%" onclick="goK(1)">NEXT</div>
+          <div class="p i8 b s ab" style="left:2%;top:90%;width:16%;height:8%" onclick="UI.go(4)">BACK</div>
+        </div>
+
+        <!-- 8 SEISMOMETER (LASER) -->
+        <div class="scr T dim" id="s8">
+          <div class="p i4 ab col" style="left:8%;top:3%;width:84%;height:28%;font-size:.98cqw;line-height:1.5">
+            <b class="am">VIKING 1 SEISMOMETER · +5 POK · PARTIAL</b>
+            Why did it fail: uncaging mechanism failure. Release pins did not fire, keeping internal sensors permanently locked.
+            <span class="c">Use the LASER: drag it along the locking bar to break the caging mechanism.</span>
+          </div>
+          <div class="ab" id="sz" style="left:30%;top:33%;width:40%;touch-action:none">
+            <img src="assets/artifacts/seismometer/02_unreleased_caged.png" style="width:100%;height:auto;display:block">
+            <div id="sz_pin" class="pin" style="left:74%;top:20%;width:3cqw;height:3cqw;border-radius:0;background:#e0301a"></div>
+          </div>
+          <div class="p i9 b ab" style="left:78%;top:68%;width:20%;height:10%;font-size:1.1cqw" onclick="window.AudioManager?.play?.('click');document.getElementById('m8').textContent='TARSY: Cut the metal locking bar utilizing LASER shooter.'">HINT</div>
+          <div class="p i6 ab msg" id="m8" style="left:8%;top:68%;width:66%;height:20%;font-size:.98cqw;line-height:1.5">Drag laser across the red locking pin at top-right.</div>
+          <div class="p i7 b s ab nxt" id="n8" style="display:none;left:80%;top:90%;width:18%;height:8%" onclick="goK(2)">NEXT</div>
+          <div class="p i8 b s ab" style="left:2%;top:90%;width:16%;height:8%" onclick="UI.go(4)">BACK</div>
+        </div>
+
+        <!-- 9 INGENUITY (CAMERA) -->
+        <div class="scr T dim" id="s9">
+          <div class="p i4 ab col" style="left:8%;top:4%;width:84%;height:33%;font-size:.98cqw;line-height:1.5">
+            <b class="am">INGENUITY HELICOPTER · +5 POK · PARTIAL</b>
+            Why did it fail: navigation tracking loss over sand ripples -> hard landing and damaged rotor blades.
+            <span class="c">TARSY: "Rotor blades are broken, but the downward NAV CAMERA is intact and can be extracted for our repair arm!"</span>
+          </div>
+          <div class="ab" id="ig" style="left:32%;top:38%;width:36%">
+            <img src="assets/artifacts/ingenuity/03_flight72_damaged.png" style="width:100%;height:auto">
+            <div class="pin" id="cam" style="left:46%;top:70%;width:4.5cqw;height:3.5cqw;border-radius:0;background:var(--cy);cursor:pointer" onclick="cam()">CAM</div>
+          </div>
+          <div class="p i6 ab msg" id="m9" style="left:8%;top:78%;width:66%;height:18%;font-size:.98cqw;line-height:1.5">Tap the flashing CAM sensor to extract it.</div>
+          <div class="p i7 b s ab nxt" id="n9" style="display:none;left:80%;top:90%;width:18%;height:8%" onclick="goK(3)">NEXT</div>
+          <div class="p i8 b s ab" style="left:2%;top:90%;width:16%;height:8%" onclick="UI.go(4)">BACK</div>
+        </div>
+
+        <!-- 10 SAMPLER ARM -->
+        <div class="scr T dim" id="s10">
+          <div class="p i4 ab col" style="left:8%;top:3%;width:84%;height:33%;font-size:1.05cqw;line-height:1.5">
+            <b class="am">VIKING 1 SURFACE SAMPLER ARM · +5 POK · PARTIAL</b>
+            Why did it fail: mechanical jam. Boom latch pin failed to drop free during initial extension, obstructing the arm.
+            <span class="c">Investigate: The pin did not drop because the boom did not extend far enough. Pull the boom further to release the pin!</span>
+          </div>
+          <div class="ab" style="left:12%;top:44%;width:76%;height:12%;border-bottom:.5cqw solid #3a1606">
+            <div class="ab" style="left:0;top:20%;width:6%;height:70%;background:#8a8a8a;border:.3cqw solid #000"></div>
+            <div class="ab" id="bm" style="left:6%;top:40%;height:30%;width:10%;background:#d8d8d8;border:.3cqw solid #000"></div>
+            <div class="ab" id="sc" style="top:25%;left:16%;width:4cqw;height:5cqw;background:var(--am);border:.3cqw solid #000"></div>
+            <div class="ab" id="lp" style="left:67%;top:-60%;width:2.4cqw;height:5cqw;background:#e0301a;border:.3cqw solid #000"></div>
+          </div>
+          <div class="ab" style="left:12%;top:62%;width:76%">
+            <input type="range" id="rg" min="10" max="100" value="10">
+          </div>
+          <div class="p i9 b ab" style="left:78%;top:70%;width:20%;height:10%;font-size:1.1cqw" onclick="window.AudioManager?.play?.('click');document.getElementById('m10').textContent='TARSY: Pull the boom past 80% to drop the latch pin.'">HINT</div>
+          <div class="p i6 ab msg" id="m10" style="left:8%;top:78%;width:66%;height:18%;font-size:.98cqw;line-height:1.5">Drag the slider to extend the boom.</div>
+          <div class="p i7 b s ab nxt" id="n10" style="display:none;left:80%;top:90%;width:18%;height:8%" onclick="goK(4)">NEXT</div>
+          <div class="p i8 b s ab" style="left:2%;top:90%;width:16%;height:8%" onclick="UI.go(4)">BACK</div>
+        </div>
+
+        <!-- 11 DISCOVERIES -->
+        <div class="scr T dim" id="s11">
+          <div class="p i2 t ab" style="left:30%;top:3%;width:40%;height:13%;font-size:2cqw">DISCOVERIES</div>
+          <div class="ab" id="dg" style="left:8%;top:20%;width:84%;display:grid;grid-template-columns:repeat(3,1fr);gap:2.2cqw 0;justify-items:center"></div>
+          <div class="p i3 ab col lf" id="dp" style="display:none;left:10%;top:12%;width:80%;height:74%;font-size:1.05cqw;line-height:1.6;z-index:30"></div>
+          <div class="p i8 b s ab" style="left:2%;top:90%;width:16%;height:8%" onclick="window.AudioManager?.play?.('click');UI.go(4)">BACK</div>
+        </div>
+
+        <!-- 12 CRAFT -->
+        <div class="scr L dim" id="s12">
+          <div class="p i2 t ab" style="left:22%;top:2%;width:56%;height:12%;font-size:1.4cqw">RSRA · ROBOTIC REPAIR ARM</div>
+          <div class="p i4 ab col" id="lk" style="left:16%;top:18%;width:68%;height:46%;z-index:5;gap:1cqw;line-height:1.6">
+            <span class="sm">The shuttle's external propulsion connection is damaged. Craft the RSRA to repair it.</span>
+            <span class="c">45 POK REQUIRED</span>
+            <div class="bar" style="width:70%"><i id="cb" style="width:0"></i></div>
+            <span id="cp">00 / 45</span>
+          </div>
+          <div class="ab" id="cr" style="inset:0;display:none">
+            <img src="assets/tarsy/01_tarsy_idle.png" class="spr" style="left:2%;top:14%;width:15%">
+            <div class="slot" id="sl_base" style="left:8%;top:70%">1 · BASE (bottom)</div>
+            <div class="slot" id="sl_release" style="left:8%;top:52%">2 · JOINT / RELEASE</div>
+            <div class="slot" id="sl_arm" style="left:30%;top:36%">3 · MAIN BOOM</div>
+            <div class="slot" id="sl_head" style="left:52%;top:20%">4 · SENSOR HEAD</div>
+            <div class="tile" id="t_base" style="left:60%;top:42%"><b class="am">BASE CLAMP</b><br>Attach anchoring mechanism (Mole).</div>
+            <div class="tile" id="t_release" style="left:80%;top:42%;width:18%"><b class="am">RELEASE UNIT</b><br>Attach locking mechanism (Seismo).</div>
+            <div class="tile" id="t_head" style="left:60%;top:56%"><b class="am">SENSOR HEAD</b><br>Connect camera & sensors (Ingenuity).</div>
+            <div class="tile" id="t_arm" style="left:80%;top:56%;width:18%"><b class="am">TELESCOPIC ARM</b><br>Attach extension & scoop (Viking).</div>
+            <div class="p i6 ab msg" id="m12" style="left:10%;top:83%;width:64%;height:15%;font-size:1.0cqw;line-height:1.5">Tap a component on the right, then tap its slot. Inspired by Canadarm.</div>
+            <div class="p i7 b ab" id="go13" style="left:76%;top:83%;width:22%;height:13%;display:none;font-size:1.1cqw">NEXT</div>
+          </div>
+          <div class="p i8 b s ab" style="left:2%;top:90%;width:16%;height:8%" onclick="window.AudioManager?.play?.('click');UI.go(4)">BACK</div>
+        </div>
+
+        <!-- 13 ENDING CINEMATIC -->
+        <div class="scr" id="s13" style="background:#000;"></div>
+
+        <!-- 14 FINAL EPILOGUE -->
+        <div class="scr" id="s14" style="background:#000;"></div>
+
+        <!-- 15 KNOWLEDGE MODAL -->
+        <div class="scr L dim" id="s15">
+          <div class="p i2 t ab" id="kt" style="left:8%;top:2%;width:84%;height:12%;font-size:1.2cqw">KNOWLEDGE</div>
+          <img id="kimg" class="spr" src="assets/tarsy/01_tarsy_idle.png" style="left:3%;top:18%;width:19%;image-rendering:pixelated">
+          <div class="p i3 ab col lf" id="kb" style="left:24%;top:17%;width:73%;height:64%;font-size:1.05cqw;line-height:1.6"></div>
+          <div class="p i7 b ab nxt" id="kn" style="left:70%;top:84%;width:28%;height:12%;font-size:1.1cqw"><span class="lbl">NEXT</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleAudio() {
+      const isMuted = window.AudioManager?.toggleMute?.();
+      const btn = document.getElementById('btn-audio-toggle');
+      if (btn) btn.textContent = isMuted ? '🔇 AUDIO: MUTED' : '🔊 AUDIO: ON';
+    }
+  </script>
+
+  <!-- Load Scripts -->
+  <script src="sprites-data.js"></script>
+  <script src="audio.js"></script>
+  <script src="kaplay.js"></script>
+  <script src="game.js"></script>
+  <script src="ui.js"></script>
+
+  <script>
+    window.addEventListener('load', () => {
+      window.Game?.init?.();
+      window.UI?.go?.(0);
+    });
+  </script>
+</body>
+</html>
